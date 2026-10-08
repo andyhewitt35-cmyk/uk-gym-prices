@@ -1,0 +1,62 @@
+name: Refresh gym prices and publish
+
+on:
+  schedule:
+    # daily 04:40 UTC (05:40 UK summer time) - offers change often
+    - cron: "40 4 * * *"
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Fetch gym prices and offers
+        # chains' own gym pages (~1 request/second per site) + OpenStreetMap; keeps the last good data for any source that fails
+        run: python3 fetch_gyms.py
+
+      - name: Assemble site
+        run: |
+          rm -rf _site && cp -r site _site
+          touch _site/.nojekyll
+          ls -la _site
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+      - id: deployment
+        uses: actions/deploy-pages@v4
+
+      # GitHub pauses scheduled workflows in repos with no commits for 60 days.
+      # A tiny commit every ~30 days keeps the daily refresh alive.
+      - name: Keep schedule alive
+        if: github.event_name == 'schedule'
+        run: |
+          last=$(git log -1 --format=%ct)
+          if [ $(( $(date +%s) - last )) -gt $(( 30*86400 )) ]; then
+            date -u +%FT%TZ > .keepalive
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add .keepalive && git commit -m "keepalive" && git push
+          fi

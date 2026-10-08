@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow, noarchive">
+<meta name="theme-color" content="#13294b">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Gym prices">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>UK gym prices – gyms near you, cheapest first</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="favicon.png">
+<link rel="preconnect" href="https://unpkg.com" crossorigin>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+<script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<style>
+:root{--bg:#f4f5f7;--card:#fff;--ink:#1d2330;--mute:#636b7a;--line:#e2e5ea;--acc:#0b5cad;--navy:#13294b;--good:#2f7d32;--bad:#b42318;--offer:#b35900;--offerbg:#fff4e5}
+*{box-sizing:border-box}[hidden]{display:none!important}
+body{margin:0;font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink)}
+header{background:var(--navy);color:#fff;padding:12px 16px;padding-top:max(12px,env(safe-area-inset-top))}
+header h1{margin:0;font-size:20px}header p{margin:3px 0 0;font-size:13px;opacity:.85}
+main{max-width:1100px;margin:0 auto;padding:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin-bottom:12px}
+h2{font-size:16px;margin:0 0 8px}
+button{font:inherit;border:1px solid #c5cbd5;background:#fff;color:var(--ink);border-radius:8px;padding:8px 12px;cursor:pointer;min-height:44px}
+button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+input[type=text],select{font:inherit;font-size:16px;padding:8px 10px;border:1px solid #c5cbd5;border-radius:8px;min-width:0;min-height:44px;background:#fff}
+#nearBtn{width:100%;min-height:58px;font-size:19px;font-weight:700;background:var(--acc);color:#fff;border:0}
+.row{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;align-items:center}.row input{flex:1}
+.lbl{font-size:13px;color:var(--mute);margin:10px 0 4px}
+.rad{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.filters{display:flex;gap:6px;flex-wrap:wrap}
+.filters button{min-height:40px;padding:6px 12px}
+.note{font-size:13px;color:var(--mute)}.err{color:var(--bad)}
+#placeLine{margin-top:10px;font-size:14px}#placeLine a{color:var(--acc);margin-left:6px}
+#summary{font-size:15px}
+#summary b{font-size:16px}
+.grid{display:grid;grid-template-columns:1fr;gap:12px}.grid>*{min-width:0}
+@media(min-width:900px){.grid{grid-template-columns:3fr 2fr}#mapCard{position:sticky;top:12px;align-self:start}}
+#map{height:320px;border-radius:10px}
+@media(min-width:900px){#map{height:560px}}
+.gym{border-top:1px solid var(--line);padding:12px 0}
+.gym:first-child{border-top:0;padding-top:2px}
+.ghead{display:flex;gap:10px;align-items:flex-start}
+.gname{flex:1;min-width:0}
+.gname a{color:var(--ink);font-weight:700;font-size:16px;text-decoration:none}
+.gname a:hover{text-decoration:underline}
+.gname .addr{display:block;font-size:13px;color:var(--mute)}
+.dist{font-size:13px;color:var(--mute);white-space:nowrap;text-align:right}
+.from{text-align:right;white-space:nowrap}
+.from b{font-size:20px;display:block;line-height:1.1}
+.from span{font-size:12px;color:var(--mute)}
+.rank{display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;border-radius:12px;background:var(--navy);color:#fff;font-size:12px;font-weight:700;flex:none;margin-top:1px}
+.chain{display:inline-block;font-size:11.5px;font-weight:700;color:#fff;border-radius:5px;padding:1px 6px;margin-right:4px;vertical-align:1px}
+table.plans{width:100%;border-collapse:collapse;font-size:14px;margin-top:8px}
+table.plans td{padding:4px 2px;border-top:1px dashed var(--line);vertical-align:top}
+table.plans tr:first-child td{border-top:0}
+table.plans td.r{text-align:right;white-space:nowrap;font-weight:600}
+.sub{font-size:12px;color:var(--mute);font-weight:400}
+.offers{background:var(--offerbg);border:1px solid #f5c98b;border-radius:8px;padding:6px 10px;margin-top:8px;font-size:13.5px}
+.offers div{margin:2px 0}
+.offers b{color:var(--offer)}
+.code{display:inline-block;font-family:ui-monospace,Menlo,monospace;background:#fff;border:1px dashed var(--offer);border-radius:5px;padding:0 5px;font-weight:700;color:var(--offer)}
+.tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:8px}
+.tag{background:#eef2f7;border-radius:999px;padding:2px 9px;font-size:12.5px}
+.tag.h24{background:#e6f4ea;color:#1e5f2b;font-weight:600}
+.foot{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:8px;font-size:12.5px;color:var(--mute)}
+.foot a{color:var(--acc);font-weight:600;font-size:14px}
+.warn{color:var(--bad);font-size:13px}
+.other{border-top:1px solid var(--line);padding:9px 0;display:flex;gap:10px}
+.other:first-child{border-top:0}
+.other .gname a{font-size:15px}
+.why{font-size:12.5px;color:var(--mute)}
+.more{width:100%;margin-top:8px}
+.cov li{margin:5px 0}
+.ok{color:var(--good);font-weight:600}
+footer{max-width:1100px;margin:0 auto;padding:0 14px 30px;font-size:12px;color:var(--mute)}
+footer a{color:var(--mute)}
+.leaflet-popup-content{font-size:13px;line-height:1.4}
+</style>
+</head>
+<body>
+<header>
+  <h1>UK gym prices</h1>
+  <p>Gyms near you, cheapest first – prices and offers from each gym's own website, with the date checked.</p>
+</header>
+<main>
+  <section class="card">
+    <button id="nearBtn">📍 Near me</button>
+    <div class="row"><input id="placeInput" type="text" placeholder="Postcode or town, e.g. WN8 7AA or Wigan" aria-label="Postcode or town" enterkeyhint="search"><button id="placeGo">Search</button></div>
+    <div class="lbl">Distance</div>
+    <div class="rad" id="radBtns"></div>
+    <div class="lbl">Filters</div>
+    <div class="filters">
+      <button id="fNC" aria-pressed="false">No contract</button>
+      <button id="f24" aria-pressed="false">24/7</button>
+      <select id="fMax" aria-label="Maximum monthly price"><option value="">Any price</option><option>20</option><option>25</option><option>30</option><option>40</option><option>50</option><option>75</option></select>
+    </div>
+    <div id="placeLine" class="note">Loading gyms…</div>
+  </section>
+
+  <div id="results" hidden>
+    <section class="card"><div id="summary"></div></section>
+    <div class="grid">
+      <div>
+        <section class="card" id="listCard"><h2 id="listTitle">Gyms with prices</h2><div id="list"></div><button class="more" id="moreBtn" hidden></button></section>
+        <section class="card" id="otherCard"><h2 id="otherTitle">Other gyms nearby – price on their site</h2><p class="note">We can't check prices for these, so they're listed nearest first with a link.</p><div id="others"></div><button class="more" id="moreOther" hidden></button></section>
+      </div>
+      <section class="card" id="mapCard"><div id="map" role="region" aria-label="Map of gyms"></div><p class="note" style="margin:6px 0 0">● with prices &nbsp; <span style="color:#b35900">●</span> with an offer &nbsp; <span style="color:#8a93a3">●</span> price on their site</p></section>
+    </div>
+  </div>
+
+  <section class="card">
+    <h2>Where the prices come from</h2>
+    <ul class="cov note" id="cov"><li>Loading…</li></ul>
+  </section>
+</main>
+<footer>
+  <p>Prices are what each gym's website showed when checked (times are UK time). Offers change often and may have conditions – always check the gym's page before joining. "From" is the cheapest regular monthly payment shown; first-month deals are listed as offers. Personal tool, not affiliated with any gym.</p>
+  <p>Map and non-chain gyms © <a href="https://www.openstreetmap.org/copyright" rel="noopener">OpenStreetMap</a> contributors (ODbL). Postcodes: <a href="https://postcodes.io/" rel="noopener">postcodes.io</a>. Places: <a href="https://www.geonames.org/" rel="noopener">GeoNames</a> (CC BY 4.0).</p>
+</footer>
+<script>
+"use strict";
+const CHAINS = {
+  puregym:{name:"PureGym",col:"#1d1d1b"}, tgg:{name:"The Gym Group",col:"#00873e"}, jd:{name:"JD Gyms",col:"#d71920"},
+  nuffield:{name:"Nuffield Health",col:"#00594f"}, bannatyne:{name:"Bannatyne",col:"#5b2a86"},
+  anytime:{name:"Anytime Fitness",col:"#5f259f",why:"Anytime Fitness's website blocks automated checks from our (US-based) servers with bot protection, so prices aren't checked."},
+  everlast:{name:"Everlast Gyms",col:"#444",why:"Everlast's website doesn't respond to our (US-based) servers, so prices aren't checked."},
+  everyoneactive:{name:"Everyone Active",col:"#0072ce",why:"Everyone Active's website refuses our (US-based) servers (Cloudflare \"access denied\"), so prices aren't checked."},
+  davidlloyd:{name:"David Lloyd",col:"#003b5c",why:"David Lloyd doesn't publish prices online – you have to enquire."},
+  snap:{name:"Snap Fitness",col:"#222",why:"Not checked by this tool yet."}, better:{name:"Better",col:"#00843d",why:"Better's prices are written differently on each centre's page, so this tool doesn't check them yet."},
+  places:{name:"Places Leisure",col:"#e4007c",why:"Not checked by this tool yet."}, "1life":{name:"1Life",col:"#e30613",why:"Not checked by this tool yet."},
+  jetts:{name:"Jetts",col:"#222",why:"Not checked by this tool yet."}, fitness4less:{name:"Fitness4Less",col:"#222",why:"Not checked by this tool yet."},
+  energie:{name:"énergie Fitness",col:"#222",why:"Not checked by this tool yet."}, simply:{name:"Simply Gym",col:"#222",why:"Not checked by this tool yet."},
+  virgin:{name:"Virgin Active",col:"#e10a0a",why:"Not checked by this tool yet."}
+};
+const PRICED = ["puregym","tgg","jd","nuffield","bannatyne"];
+const RADII = [2,5,10,25], LS = "gym:place";
+const S = {radius:5, place:null, nc:false, h24:false, max:null, showAll:false, showAllOther:false};
+let G = [], O = [], META = {}, OMETA = {}, map = null, layer = null;
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const gbp = v => v == null ? "" : "£" + (Math.round(v*100)%100 ? v.toFixed(2) : v.toFixed(0));
+const UKT = new Intl.DateTimeFormat("en-GB",{timeZone:"Europe/London",day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
+const UKD = new Intl.DateTimeFormat("en-GB",{timeZone:"Europe/London",day:"numeric",month:"short",year:"numeric"});
+const when = t => t ? UKT.format(new Date(t)).replace(",", "") + " UK" : "unknown";
+const old = t => t && Date.now() - new Date(t).getTime() > 48*3600e3;
+function miles(a,b,c,d){const R=3958.8,t=Math.PI/180,x=(c-a)*t,y=(d-b)*t,h=Math.sin(x/2)**2+Math.cos(a*t)*Math.cos(c*t)*Math.sin(y/2)**2;return 2*R*Math.asin(Math.sqrt(h));}
+const fmtMi = d => d < 10 ? d.toFixed(1) + " mi" : Math.round(d) + " mi";
+function msg(t, bad){ $("placeLine").className = "note" + (bad ? " err" : ""); $("placeLine").textContent = t; }
+function chainTag(c){ const x = CHAINS[c]; return x ? `<span class="chain" style="background:${x.col}">${esc(x.name)}</span>` : ""; }
+
+function price(g){ return S.nc ? g.fromNC : g.from; }
+function planRows(g){
+  return (g.plans||[]).map(p => {
+    let left = esc(p.n), right = p.up ? `${gbp(p.up)} <span class="sub">upfront</span>` : `${gbp(p.m)}<span class="sub">/month</span>`;
+    const bits = [];
+    if (p.term === 0) bits.push("no contract"); else if (p.term) bits.push(p.term + "-month contract");
+    if (p.up && p.m) bits.push("≈ " + gbp(p.m) + "/month");
+    if (p.first != null) bits.push("first month " + gbp(p.first));
+    if (p.was) bits.push("was " + gbp(p.was));
+    if (p.note && !/commitment/i.test(p.note)) bits.push(p.note);
+    return `<tr><td>${left}${bits.length ? `<div class="sub">${esc(bits.join(" · "))}</div>` : ""}</td><td class="r">${right}</td></tr>`;
+  }).join("");
+}
+function joinFee(g){
+  const fees = [...new Set((g.plans||[]).filter(p => !p.up && p.jf != null).map(p => p.jf))];
+  if (!fees.length) return g.partial ? "Joining fee: see their site" : "";
+  if (fees.length === 1) return fees[0] === 0 ? "No joining fee" : "Joining fee " + gbp(fees[0]);
+  return "Joining fee " + fees.map(gbp).join(" / ");
+}
+function offerHTML(g){
+  if (!g.offers || !g.offers.length) return "";
+  return `<div class="offers">${g.offers.map(o => `<div><b>🏷 Offer:</b> ${esc(o.x)}${o.code ? ` – code <span class="code">${esc(o.code)}</span>` : ""}${o.end ? ` <span class="sub">(ends ${esc(UKD.format(new Date(o.end + "T12:00:00Z")))})</span>` : ""}</div>`).join("")}</div>`;
+}
+function gymHTML(g, i){
+  const p = price(g), basis = (g.plans||[]).find(x => x.m === p && !x.up);
+  const basisTxt = basis ? (basis.term === 0 ? "no contract" : basis.term ? basis.term + "-month contract" : (g.partial ? "lowest shown" : "")) : "";
+  const tags = [];
+  if (g.h24) tags.push('<span class="tag h24">24/7</span>');
+  (g.fac||[]).forEach(f => tags.push(`<span class="tag">${esc(f)}</span>`));
+  if (g.hours && !g.h24) tags.push(`<span class="tag">${esc(g.hours.replace(/;\s*$/,""))}</span>`);
+  return `<div class="gym">
+    <div class="ghead"><span class="rank">${i+1}</span>
+      <div class="gname">${chainTag(g.c)}<a href="${esc(g.url)}" target="_blank" rel="noopener">${esc(g.n)}</a><span class="addr">${esc(g.a)}</span></div>
+      <div class="from">${p != null ? `<b>${gbp(p)}</b><span>/month${basisTxt ? "<br>" + esc(basisTxt) : ""}</span>` : `<span>price on<br>their site</span>`}<div class="dist">${fmtMi(g.d)}</div></div>
+    </div>
+    ${g.status ? `<div class="warn">${esc(g.status)}</div>` : ""}
+    ${g.plans && g.plans.length ? `<table class="plans">${planRows(g)}</table>` : ""}
+    ${offerHTML(g)}
+    <div class="tags">${tags.join("")}</div>
+    <div class="foot"><span>${esc(joinFee(g))}${joinFee(g) ? " · " : ""}checked ${esc(when(g.t))}${old(g.t) ? ' <span class="warn">(older)</span>' : ""}</span><a href="${esc(g.url)}" target="_blank" rel="noopener">Gym page ↗</a></div>
+  </div>`;
+}
+function otherHTML(o){
+  const c = CHAINS[o.chain];
+  const why = c && c.why ? c.why : (o.kind === "lc" ? "Leisure centre – prices not checked by this tool." : "Independent gym – prices not checked by this tool.");
+  const link = o.web || ("https://www.google.com/search?q=" + encodeURIComponent(o.name + " " + (o.addr || "gym")));
+  return `<div class="other"><div class="gname">${chainTag(o.chain)}<a href="${esc(link)}" target="_blank" rel="noopener">${esc(o.name)}</a>${o.h24 ? ' <span class="tag h24">24/7</span>' : ""}
+    <span class="addr">${esc(o.addr || "")}</span><span class="why">${esc(why)} ${o.web ? "Link: their website." : "No website listed – link is a web search."}</span></div><div class="dist">${fmtMi(o.d)}</div></div>`;
+}
+
+function render(){
+  const p = S.place; if (!p) return;
+  const R = S.radius;
+  let near = G.map(g => Object.assign(g, {d: miles(p.lat,p.lon,g.lat,g.lon)})).filter(g => g.d <= R);
+  let others = O.map(o => Object.assign(o, {d: miles(p.lat,p.lon,o.lat,o.lon)})).filter(o => o.d <= R);
+  // drop OSM entries sitting on top of a priced gym (same place, different tagging)
+  others = others.filter(o => !near.some(g => miles(o.lat,o.lon,g.lat,g.lon) < 0.06));
+  const total = near.length + others.length;
+  let priced = near.filter(g => price(g) != null), unpriced = near.filter(g => price(g) == null);
+  if (S.h24) { priced = priced.filter(g => g.h24); unpriced = unpriced.filter(g => g.h24); others = others.filter(o => o.h24); }
+  if (S.max) priced = priced.filter(g => price(g) <= S.max);
+  let hiddenOthers = 0;
+  if (S.nc || S.max) { hiddenOthers = others.length + unpriced.length; others = []; unpriced = []; }
+  priced.sort((a,b) => price(a) - price(b) || a.d - b.d);
+  others.sort((a,b) => a.d - b.d);
+  const list = priced.concat(unpriced.sort((a,b) => a.d - b.d));
+  const offersN = priced.filter(g => g.offers && g.offers.length).length;
+  window.__gym = {place: p, radius: R, priced: priced.length, others: others.length, offers: offersN, cheapest: priced.slice(0,3).map(g => ({n: g.n, from: price(g), d: +g.d.toFixed(1), offers: (g.offers||[]).map(o => o.x + (o.code ? " [code " + o.code + "]" : "") + (o.end ? " (ends " + o.end + ")" : ""))}))};
+  $("results").hidden = false;
+  const f = [S.nc && "no contract", S.h24 && "24/7", S.max && "under £" + S.max].filter(Boolean);
+  $("summary").innerHTML = total ? `<b>${priced.length}</b> gym${priced.length === 1 ? "" : "s"} with prices${f.length ? " (" + esc(f.join(", ")) + ")" : ""} within ${R} miles of ${esc(p.name)}` +
+      (priced.length ? ` · cheapest <b>${esc(priced[0].n)}</b> ${gbp(price(priced[0]))}/month, ${fmtMi(priced[0].d)} away` : "") +
+      ` · ${offersN} with offers · ${others.length} other gyms listed${hiddenOthers ? ` (${hiddenOthers} without prices hidden by your filters)` : ""}`
+    : `No gyms found within ${R} miles. Try a bigger distance.`;
+  $("listTitle").textContent = `Chain gyms – cheapest first (${list.length})`;
+  const shown = S.showAll ? list : list.slice(0, 15);
+  $("list").innerHTML = shown.length ? shown.map(gymHTML).join("") : `<p class="note">No gyms with prices match. ${S.max || S.nc || S.h24 ? "Try removing a filter or " : "Try "}a bigger distance.</p>`;
+  $("moreBtn").hidden = S.showAll || list.length <= 15; $("moreBtn").textContent = `Show all ${list.length}`;
+  $("otherCard").hidden = !others.length;
+  $("otherTitle").textContent = `Other gyms nearby – price on their site (${others.length})`;
+  const so = S.showAllOther ? others : others.slice(0, 15);
+  $("others").innerHTML = so.map(otherHTML).join("");
+  $("moreOther").hidden = S.showAllOther || others.length <= 15; $("moreOther").textContent = `Show all ${others.length}`;
+  drawMap(p, R, priced.concat(unpriced), others);
+}
+
+function drawMap(p, R, priced, others){
+  if (!window.L) { setTimeout(() => drawMap(p, R, priced, others), 300); return; }
+  try { drawMap2(p, R, priced, others); } catch (e) { console.warn("map", e); }
+}
+function drawMap2(p, R, priced, others){
+  if (!map) {
+    map = L.map("map", {scrollWheelZoom: false}).setView([p.lat, p.lon], 12);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {maxZoom: 18, attribution: "© OpenStreetMap contributors"}).addTo(map);
+  }
+  if (layer) layer.remove();
+  layer = L.layerGroup().addTo(map);
+  const circle = L.circle([p.lat, p.lon], {radius: R * 1609.34, color: "#0b5cad", weight: 1, fillOpacity: 0.04}).addTo(layer);
+  L.circleMarker([p.lat, p.lon], {radius: 7, color: "#fff", weight: 2, fillColor: "#0b5cad", fillOpacity: 1}).addTo(layer).bindPopup(esc(p.name));
+  others.forEach(o => L.circleMarker([o.lat, o.lon], {radius: 5, color: "#fff", weight: 1, fillColor: "#8a93a3", fillOpacity: .9}).addTo(layer)
+    .bindPopup(`<b>${esc(o.name)}</b><br>${fmtMi(o.d)} · price on their site${o.web ? `<br><a href="${esc(o.web)}" target="_blank" rel="noopener">Website</a>` : ""}`));
+  priced.forEach((g, i) => { const has = g.offers && g.offers.length, pr = price(g);
+    L.circleMarker([g.lat, g.lon], {radius: 8, color: "#fff", weight: 2, fillColor: has ? "#b35900" : "#13294b", fillOpacity: 1}).addTo(layer)
+      .bindPopup(`<b>${i+1}. ${esc(g.n)}</b><br>${pr != null ? "from " + gbp(pr) + "/month" : "price on their site"} · ${fmtMi(g.d)}${has ? "<br>🏷 " + esc(g.offers[0].x) : ""}<br><a href="${esc(g.url)}" target="_blank" rel="noopener">Gym page</a>`); });
+  map.fitBounds(L.latLng(p.lat, p.lon).toBounds(R * 1609.34 * 2), {padding: [8, 8]});
+  setTimeout(() => map.invalidateSize(), 200);
+}
+
+// ---------- place ----------
+function setPlace(p, save){
+  S.place = p; S.showAll = false; S.showAllOther = false;
+  if (save) try { localStorage.setItem(LS, JSON.stringify(p)); } catch (e) {}
+  showPlaceLine(); if (G.length) render();
+}
+function showPlaceLine(){
+  const p = S.place;
+  if (!p) { msg("Tap Near me, or type a postcode or town."); return; }
+  $("placeLine").className = "note";
+  $("placeLine").innerHTML = "Gyms near <b>" + esc(p.name) + "</b>" + (p.saved ? " (last used)" : "") + " <a href='#' id='clearPlace'>clear</a>";
+  $("clearPlace").onclick = e => { e.preventDefault(); try { localStorage.removeItem(LS); } catch (x) {} S.place = null; $("results").hidden = true; showPlaceLine(); };
+}
+$("nearBtn").onclick = () => {
+  if (!navigator.geolocation) { msg("This browser can't share your location. Type a postcode instead.", true); return; }
+  msg("Finding your location…");
+  navigator.geolocation.getCurrentPosition(pos => {
+    const p = {name: "your location", lat: +pos.coords.latitude.toFixed(4), lon: +pos.coords.longitude.toFixed(4)};
+    window.__placeSeq = (window.__placeSeq || 0) + 1;
+    setPlace(p, true);
+    fetch("https://api.postcodes.io/postcodes?lon=" + p.lon + "&lat=" + p.lat + "&limit=1").then(r => r.json()).then(j => {
+      const x = j && j.result && j.result[0];
+      if (x && S.place === p) { p.name = (x.parish && !/unparished/i.test(x.parish) ? x.parish.replace(/ CP$/, "") + ", " : (x.admin_ward ? x.admin_ward + ", " : "")) + x.postcode + " (your location)"; try { localStorage.setItem(LS, JSON.stringify(p)); } catch (e) {} showPlaceLine(); render(); }
+    }).catch(() => {});
+  }, e => msg((e.code === 1 ? "Location permission was refused" : "Couldn't get your location") + ". Type a postcode or town instead.", true),
+  {enableHighAccuracy: false, timeout: 15000, maximumAge: 0});
+};
+let townsP = null;
+function towns(){ if (!townsP) townsP = fetch("towns.json").then(r => r.json()).then(j => j.t.map(r => ({name: r[0], lat: r[1], lon: r[2]}))); return townsP; }
+async function lookup(raw){
+  raw = raw.trim(); if (!raw) return;
+  const pc = raw.toUpperCase().replace(/\s+/g, "");
+  msg("Looking up " + raw + "…");
+  try {
+    let url;
+    if (/^[A-Z]{1,2}\d[A-Z\d]?\d[A-Z]{2}$/.test(pc)) url = "https://api.postcodes.io/postcodes/" + pc;
+    else if (/^[A-Z]{1,2}\d[A-Z\d]?$/.test(pc)) url = "https://api.postcodes.io/outcodes/" + pc;
+    else url = "https://api.postcodes.io/places?limit=10&q=" + encodeURIComponent(raw);
+    const r = await fetch(url);
+    if (r.ok) {
+      const j = await r.json(); let x = j.result;
+      const w = raw.toLowerCase(), nm = p => [p.name_1, p.name_2].filter(Boolean).find(n => n.toLowerCase() === w) || (p.name_2_lang === "eng" ? p.name_2 : p.name_1);
+      if (Array.isArray(x)) x = x.find(p => [p.name_1, p.name_2].some(n => (n || "").toLowerCase() === w) && /^(Town|City|Village|Suburban Area|Hamlet)/i.test(p.local_type || "")) || x.find(p => /^(Town|City)/i.test(p.local_type || "")) || x[0];
+      if (x && x.latitude) {
+        const area = x.county_unitary || x.region || "", n1 = x.name_1 ? nm(x) : null;
+        const name = n1 ? (area && !area.includes(n1) ? n1 + ", " + area : n1) : (x.postcode || x.outcode);
+        window.__placeSeq = (window.__placeSeq || 0) + 1;
+        setPlace({name, lat: x.latitude, lon: x.longitude}, true); return;
+      }
+    }
+  } catch (e) {}
+  const T = await towns().catch(() => null);
+  if (T) { const t = T.find(t => t.name.toLowerCase() === raw.toLowerCase()); if (t) { window.__placeSeq = (window.__placeSeq || 0) + 1; setPlace({name: t.name, lat: t.lat, lon: t.lon}, true); return; } }
+  msg("Couldn't find \"" + raw + "\". Try a full postcode like WN8 7AA, or a town name.", true);
+}
+$("placeGo").onclick = () => { $("placeInput").blur(); lookup($("placeInput").value); };
+$("placeInput").addEventListener("keydown", e => { if (e.key === "Enter") { e.target.blur(); lookup(e.target.value); } });
+RADII.forEach(r => { const b = document.createElement("button"); b.textContent = r + " mi"; b.dataset.r = r; if (r === S.radius) b.className = "on";
+  b.onclick = () => { S.radius = r; S.showAll = false; [...$("radBtns").children].forEach(x => x.classList.toggle("on", x === b)); render(); }; $("radBtns").appendChild(b); });
+function toggle(id, key){ $(id).onclick = () => { S[key] = !S[key]; $(id).classList.toggle("on", S[key]); $(id).setAttribute("aria-pressed", S[key]); render(); }; }
+toggle("fNC", "nc"); toggle("f24", "h24");
+$("fMax").onchange = e => { S.max = e.target.value ? +e.target.value : null; render(); };
+$("moreBtn").onclick = () => { S.showAll = true; render(); };
+$("moreOther").onclick = () => { S.showAllOther = true; render(); };
+
+function coverage(){
+  const st = META.status || {};
+  const li = [];
+  PRICED.forEach(k => { const s = st[k] || {}, n = G.filter(g => g.c === k).length;
+    li.push(`<li>${chainTag(k)} <span class="${s.ok ? "ok" : "err"}">${s.ok ? "✓ checked" : "✗ last update failed – showing older prices"}</span> ${n} gyms · ${esc(when(s.at))}${k === "bannatyne" ? " · “from” price and headline offer only" : ""}</li>`); });
+  const osmState = !O.length ? ' – <span class="err">the OpenStreetMap list couldn\'t be downloaded yet (map servers busy), so only the chains above are shown; it retries daily</span>'
+    : OMETA.ok === false ? ` – <span class="err">${OMETA.failedTiles || OMETA.error && /areas failed/.test(OMETA.error) ? "some areas failed on the last update – older list kept there" : "last update failed – older list"}</span>` : "";
+  li.push(`<li><b>Listed without prices</b> (${O.length} gyms from OpenStreetMap${O.length ? ", list updated " + esc(when(OMETA.at)) : ""}${OMETA.osm ? ", map data as of " + esc(when(OMETA.osm)) : ""})${osmState}:</li>`);
+  ["anytime","everlast","everyoneactive","davidlloyd","better","snap","places","1life"].forEach(k => li.push(`<li>${chainTag(k)} ${esc(CHAINS[k].why)}</li>`));
+  li.push(`<li>Independent gyms and council leisure centres: listed from OpenStreetMap with their website where known. Prices not checked.</li>`);
+  $("cov").innerHTML = li.join("");
+}
+
+Promise.all([
+  fetch("gyms.json", {cache: "no-cache"}).then(r => { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); }),
+  fetch("osm.json", {cache: "no-cache"}).then(r => r.ok ? r.json() : {gyms: []}).catch(() => ({gyms: []}))
+]).then(([g, o]) => {
+  META = g; G = g.gyms; OMETA = o;
+  O = (o.gyms || []).map(r => ({lat: r[0], lon: r[1], name: r[2], web: r[3], h24: !!r[4], addr: r[5], chain: r[6], kind: r[7]}));
+  coverage();
+  let saved = null; try { saved = JSON.parse(localStorage.getItem(LS) || "null"); } catch (e) {}
+  if (saved && saved.lat) { saved.saved = true; setPlace(saved, false); } else showPlaceLine();
+}).catch(e => msg("Couldn't load the gym list (" + e.message + "). Try again in a minute.", true));
+</script>
+</body>
+</html>
