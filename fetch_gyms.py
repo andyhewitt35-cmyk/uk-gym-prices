@@ -414,7 +414,10 @@ out center tags;"""
     last = None
     for ep in OVERPASS:
         try:
-            d = json.loads(get(ep, timeout=150, tries=1, data=urllib.parse.urlencode({"data": q}).encode()))
+            body = urllib.parse.urlencode({"data": q}).encode()
+            req = urllib.request.Request(ep, data=body, headers={"User-Agent": "HewittGymFinder/1.0 (+https://andyhewitt35-cmyk.github.io/uk-gym-prices/; OSM Overpass)", "Accept": "application/json"})
+            with urllib.request.urlopen(req, timeout=150) as r:
+                d = json.loads(r.read().decode("utf-8", "replace"))
             if "elements" in d and not (d.get("remark") and "error" in d["remark"].lower()):
                 return d["elements"], (d.get("osm3s") or {}).get("timestamp_osm_base")
             last = d.get("remark") or "no elements"
